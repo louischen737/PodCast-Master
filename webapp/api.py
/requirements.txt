@@ -1,0 +1,74 @@
+from pydub import AudioSegment
+
+# ...
+
+@router.post('/api/generate_audio')
+async def generate_audio(
+    # ... 函数签名不变
+):
+    """
+    支持双人模式结构化脚本顺序合成和拼接音频。
+    前端 text 字段可为结构化 JSON（推荐），也可为纯文本。
+    """
+    import io
+    from pydub import AudioSegment
+    tts = get_tts_client()
+    try:
+        combined_audio = AudioSegment.empty()
+        
+        text_list = []
+        params_list = []
+
+        if mode == 'double':
+            try:
+                script_json = json.loads(text)
+                assert isinstance(script_json, list)
+            except Exception:
+                # 回退逻辑，此处简化，建议前端始终传递JSON
+                return JSONResponse(status_code=400, content={"message": "双人模式需要JSON格式的脚本"})
+            
+            for item in script_json:
+                role = item.get('role')
+                txt = item.get('text', '').strip()
+                if not txt: continue
+                
+                if role == roleAName:
+                    text_list.append(txt)
+                    params_list.append({'voice': roleAVoice, 'speed': speedA, 'volume': int(volumeA), 'pitch': int(pitchA), 'emotion': emotionA})
+                elif role == roleBName:
+                    text_list.append(txt)
+                    params_list.append({'voice': roleBVoice, 'speed': speedB, 'volume': int(volumeB), 'pitch': int(pitchB), 'emotion': emotionB})
+
+        else: # single mode
+            try:
+                script_json = json.loads(text)
+                assert isinstance(script_json, list)
+                text_list = [item['text'].strip() for item in script_json if 'text' in item and item['text'].strip()]
+            except Exception:
+                text_list = [s.strip() for s in re.split(r'[。！？!?.\n]', text) if s.strip()]
+            
+            for _ in text_list:
+                params_list.append({'voice': voice, 'speed': speed, 'volume': int(volume), 'pitch': int(pitch), 'emotion': emotion})
+
+        for i, seg_text in enumerate(text_list):
+            seg_params = params_list[i]
+            audio_piece_bytes = tts.synthesize_long_text(
+                seg_text, seg_params['voice'],
+                speed=seg_params['speed'], volume=seg_params['volume'], 
+                pitch=seg_params['pitch'], emotion=seg_params['emotion'], language=language
+            )
+            segment = AudioSegment.from_file(io.BytesIO(audio_piece_bytes), format="mp3")
+            combined_audio += segment
+        
+        final_audio_buffer = io.BytesIO()
+        combined_audio.export(final_audio_buffer, format="mp3")
+        final_audio_buffer.seek(0)
+
+        return StreamingResponse(final_audio_buffer, media_type='audio/mpeg')
+        
+    except Exception as e:
+        traceback.print_exc()
+        return JSONResponse(status_code=500, content={"success": False, "message": str(e)})
+
+# ...
+pydub 

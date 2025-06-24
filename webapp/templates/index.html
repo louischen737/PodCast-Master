@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI播客生成器</title>
+    <link rel="stylesheet" href="{{ url_for('static', path='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <div class="step-bar">
+          <div class="step active" data-step="1">1 上传内容</div>
+          <div class="step" data-step="2">2 生成脚本</div>
+          <div class="step" data-step="3">3 语音合成</div>
+        </div>
+        <h1>AI播客生成器</h1>
+        <div id="app">
+            <!-- 步骤1：上传内容 -->
+            <div class="card step-content" id="step-1">
+                <div class="input-method">
+                    <button class="method-btn active" data-method="file">本地文件</button>
+                    <button class="method-btn" data-method="url">网页URL</button>
+                </div>
+                <div class="input-area" id="file-input-area">
+                    <div class="upload-box" id="drop-zone">
+                        <input type="file" id="file-input" accept=".pdf,.doc,.docx,.txt" style="display: none;">
+                        <div class="upload-content">
+                            <img src="{{ url_for('static', path='upload-icon.svg') }}" alt="上传图标" class="upload-icon">
+                            <p>拖拽文件到这里或点击上传</p>
+                            <p class="file-types">支持 PDF、Word、TXT 格式</p>
+                        </div>
+                    </div>
+                    <div id="file-name" class="file-name"></div>
+                </div>
+                <div class="input-area" id="url-input-area" style="display: none;">
+                    <input type="url" id="url-input" placeholder="请输入网页URL" class="url-input">
+                </div>
+                <div class="step-btns" style="text-align:right; margin-top:24px;">
+                    <button type="button" class="button next-step-btn" data-next="2">下一步</button>
+                </div>
+            </div>
+            <!-- 步骤2：生成脚本（含播客设置项） -->
+            <div class="card step-content" id="step-2" style="display:none;">
+                <h2 class="section-title">播客设置与脚本生成</h2>
+                <!-- 新增：单人/双人模式切换 -->
+                <div class="mode-select" style="margin-bottom: 1.5rem;">
+                    <label><input type="radio" name="podcast_mode" id="mode-single" value="single" checked> 单人模式</label>
+                    <label style="margin-left: 2em;"><input type="radio" name="podcast_mode" id="mode-double" value="double"> 双人模式</label>
+                </div>
+                <!-- 单人模式角色参数设置区 -->
+                <div id="role-settings-single" class="role-settings role-card" style="margin-bottom:2rem;">
+                    <h4 style="margin-bottom:1rem;">角色设置</h4>
+                    <div class="setting-item">
+                        <label for="role1-name">角色名称：</label>
+                        <input type="text" id="role1-name" class="setting-input" placeholder="如：主播" value="主播">
+                    </div>
+                    <div class="setting-item">
+                        <label for="role1-style">语音风格：</label>
+                        <select id="role1-style" class="setting-input">
+                            <option value="温和">温和</option>
+                            <option value="专业">专业</option>
+                            <option value="活泼">活泼</option>
+                        </select>
+                    </div>
+                </div>
+                <!-- 双人模式角色参数设置区 -->
+                <div id="role-settings-double" class="role-settings-double" style="display:none; gap:32px; margin-bottom:2rem;">
+                    <div class="role-card">
+                        <h4 style="margin-bottom:1rem;">角色A</h4>
+                        <div class="setting-item">
+                            <label for="roleA-name">名称：</label>
+                            <input type="text" id="roleA-name" class="setting-input" placeholder="如：小明" value="A">
+                        </div>
+                        <div class="setting-item">
+                            <label for="roleA-style">语音风格：</label>
+                            <select id="roleA-style" class="setting-input">
+                                <option value="温和">温和</option>
+                                <option value="专业">专业</option>
+                                <option value="活泼">活泼</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="role-card">
+                        <h4 style="margin-bottom:1rem;">角色B</h4>
+                        <div class="setting-item">
+                            <label for="roleB-name">名称：</label>
+                            <input type="text" id="roleB-name" class="setting-input" placeholder="如：小红" value="B">
+                        </div>
+                        <div class="setting-item">
+                            <label for="roleB-style">语音风格：</label>
+                            <select id="roleB-style" class="setting-input">
+                                <option value="温和">温和</option>
+                                <option value="专业">专业</option>
+                                <option value="活泼">活泼</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <!-- 播客信息设置区 -->
+                <div class="podcast-settings" style="margin-bottom:2rem;">
+                    <h4 style="margin-bottom:1rem;">播客信息</h4>
+                    <div class="setting-item">
+                        <label for="podcast-title-input">播客名称：</label>
+                        <input type="text" id="podcast-title-input" placeholder="请输入播客名称 (可选)" class="setting-input">
+                    </div>
+                    <div class="setting-item">
+                        <label for="next_episode_preview">下期预告：</label>
+                        <input type="text" class="setting-input" id="next_episode_preview" name="next_episode_preview" placeholder="请输入下期节目预告 (可选)">
+                    </div>
+                    <!-- 脚本语种选择合并到播客信息区 -->
+                    <div class="setting-item">
+                        <label for="language-select">脚本语种：</label>
+                        <select id="language-select" class="setting-input">
+                            <option value="zh">中文</option>
+                            <option value="en">英文</option>
+                        </select>
+                    </div>
+                </div>
+                <button id="extract-btn" class="extract-btn">生成播客脚本</button>
+                <div id="loading" class="loading" style="display: none;">
+                    <div class="spinner"></div>
+                    <p>正在生成播客脚本，请稍候...</p>
+                </div>
+                <div class="form-group">
+                    <label for="podcast_script">生成的播客脚本</label>
+                    <div class="script-container">
+                        <div id="script-editor"></div>
+                        <div class="script-controls">
+                            <button type="button" class="btn btn-primary" id="copy_script">复制脚本</button>
+                            <button type="button" class="btn btn-primary" id="download_script">下载脚本</button>
+                        </div>
+                    </div>
+                    <div class="script-stats mt-2">
+                        <small class="text-muted">
+                            字数统计：<span id="word_count">0</span> 字
+                            <span class="mx-2">|</span>
+                            预计时长：<span id="duration">0</span> 分钟
+                        </small>
+                    </div>
+                </div>
+                <div class="step-btns" style="text-align:right; margin-top:24px;">
+                    <button type="button" class="button prev-step-btn" data-prev="1">上一步</button>
+                    <button type="button" class="button next-step-btn" data-next="3">下一步</button>
+                </div>
+            </div>
+            <!-- 步骤3：语音合成 -->
+            <div class="card step-content" id="step-3" style="display:none;">
+                <h2 class="section-title">语音合成</h2>
+                <!-- 单人模式声音参数设置 -->
+                <div id="tts-settings-single" class="tts-settings-card" style="margin-bottom:2rem;">
+                    <h4>角色声音设置</h4>
+                    <div class="setting-item">
+                        <label for="voice-single">声音：</label>
+                        <select id="voice-single" class="setting-input">
+                            <option value="male-qn-qingse">青涩男声</option>
+                            <option value="female-qn-qingse">青涩女声</option>
+                            <option value="male-qn-zhongxing">中性男声</option>
+                            <option value="female-qn-zhongxing">中性女声</option>
+                        </select>
+                    </div>
+                    <div class="setting-item">
+                        <label for="speed-single">语速：</label>
+                        <input type="range" id="speed-single" min="0.5" max="2.0" step="0.01" value="1.0">
+                        <span id="speed-value-single">1.0</span>
+                    </div>
+                    <div class="setting-item">
+                        <label for="volume-single">音量：</label>
+                        <input type="range" id="volume-single" min="0.5" max="2.0" step="0.01" value="1.0">
+                        <span id="volume-value-single">1.0</span>
+                    </div>
+                    <div class="setting-item">
+                        <label for="pitch-single">音调：</label>
+                        <input type="range" id="pitch-single" min="-12" max="12" step="1" value="0">
+                        <span id="pitch-value-single">0</span>
+                    </div>
+                    <div class="setting-item">
+                        <label for="emotion-single">情感：</label>
+                        <select id="emotion-single" class="setting-input">
+                            <option value="happy">高兴 happy</option>
+                            <option value="sad">悲伤 sad</option>
+                            <option value="angry">愤怒 angry</option>
+                            <option value="fearful">害怕 fearful</option>
+                            <option value="disgusted">厌恶 disgusted</option>
+                            <option value="surprised">惊讶 surprised</option>
+                            <option value="neutral">中性 neutral</option>
+                        </select>
+                    </div>
+                </div>
+                <!-- 双人模式声音参数设置 -->
+                <div id="tts-settings-double" class="tts-settings-double" style="display:none; gap:32px; margin-bottom:2rem;">
+                    <div class="tts-settings-card">
+                        <h4>角色A声音设置</h4>
+                        <div class="setting-item">
+                            <label>角色名称：</label>
+                            <span id="display-name-A" class="role-name-display"></span>
+                        </div>
+                        <div class="setting-item">
+                            <label for="voice-A">声音：</label>
+                            <select id="voice-A" class="setting-input">
+                                <option value="male-qn-qingse">青涩男声</option>
+                                <option value="female-qn-qingse">青涩女声</option>
+                                <option value="male-qn-zhongxing">中性男声</option>
+                                <option value="female-qn-zhongxing">中性女声</option>
+                            </select>
+                        </div>
+                        <div class="setting-item">
+                            <label for="speed-A">语速：</label>
+                            <input type="range" id="speed-A" min="0.5" max="2.0" step="0.01" value="1.0">
+                            <span id="speed-value-A">1.0</span>
+                        </div>
+                        <div class="setting-item">
+                            <label for="volume-A">音量：</label>
+                            <input type="range" id="volume-A" min="0.5" max="2.0" step="0.01" value="1.0">
+                            <span id="volume-value-A">1.0</span>
+                        </div>
+                        <div class="setting-item">
+                            <label for="pitch-A">音调：</label>
+                            <input type="range" id="pitch-A" min="-12" max="12" step="1" value="0">
+                            <span id="pitch-value-A">0</span>
+                        </div>
+                        <div class="setting-item">
+                            <label for="emotion-A">情感：</label>
+                            <select id="emotion-A" class="setting-input">
+                                <option value="happy">高兴 happy</option>
+                                <option value="sad">悲伤 sad</option>
+                                <option value="angry">愤怒 angry</option>
+                                <option value="fearful">害怕 fearful</option>
+                                <option value="disgusted">厌恶 disgusted</option>
+                                <option value="surprised">惊讶 surprised</option>
+                                <option value="neutral">中性 neutral</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="tts-settings-card">
+                        <h4>角色B声音设置</h4>
+                        <div class="setting-item">
+                            <label>角色名称：</label>
+                            <span id="display-name-B" class="role-name-display"></span>
+                        </div>
+                        <div class="setting-item">
+                            <label for="voice-B">声音：</label>
+                            <select id="voice-B" class="setting-input">
+                                <option value="male-qn-qingse">青涩男声</option>
+                                <option value="female-qn-qingse">青涩女声</option>
+                                <option value="male-qn-zhongxing">中性男声</option>
+                                <option value="female-qn-zhongxing">中性女声</option>
+                            </select>
+                        </div>
+                        <div class="setting-item">
+                            <label for="speed-B">语速：</label>
+                            <input type="range" id="speed-B" min="0.5" max="2.0" step="0.01" value="1.0">
+                            <span id="speed-value-B">1.0</span>
+                        </div>
+                        <div class="setting-item">
+                            <label for="volume-B">音量：</label>
+                            <input type="range" id="volume-B" min="0.5" max="2.0" step="0.01" value="1.0">
+                            <span id="volume-value-B">1.0</span>
+                        </div>
+                        <div class="setting-item">
+                            <label for="pitch-B">音调：</label>
+                            <input type="range" id="pitch-B" min="-12" max="12" step="1" value="0">
+                            <span id="pitch-value-B">0</span>
+                        </div>
+                        <div class="setting-item">
+                            <label for="emotion-B">情感：</label>
+                            <select id="emotion-B" class="setting-input">
+                                <option value="happy">高兴 happy</option>
+                                <option value="sad">悲伤 sad</option>
+                                <option value="angry">愤怒 angry</option>
+                                <option value="fearful">害怕 fearful</option>
+                                <option value="disgusted">厌恶 disgusted</option>
+                                <option value="surprised">惊讶 surprised</option>
+                                <option value="neutral">中性 neutral</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <button id="synthesize-btn" class="synthesize-btn">开始语音合成</button>
+                <div id="synthesis-progress" class="synthesis-progress" style="display: none;">
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="progress-fill"></div>
+                    </div>
+                    <p id="progress-text">正在合成语音...</p>
+                </div>
+                <div id="audio-player" class="audio-player" style="display: none;">
+                    <h4>合成结果</h4>
+                    <audio id="audio-element" controls>
+                        您的浏览器不支持音频播放
+                    </audio>
+                    <div class="audio-controls">
+                        <button id="download-audio" class="btn btn-primary">下载音频</button>
+                    </div>
+                </div>
+                <div class="step-btns" style="text-align:right; margin-top:24px;">
+                    <button type="button" class="button prev-step-btn" data-prev="2">上一步</button>
+                </div>
+            </div>
+            <!-- 历史任务区 -->
+            <div class="card" style="display: none;">
+                <h2 class="section-title">历史合成任务</h2>
+                <div class="history-section" id="history-section">
+                    <div id="task-list" class="task-list">
+                        <!-- 任务列表将通过 JavaScript 动态加载 -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script src="{{ url_for('static', path='main.js') }}"></script>
+</body>
+</html> 

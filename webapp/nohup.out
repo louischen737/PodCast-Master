@@ -1,0 +1,6 @@
+INFO:     Will watch for changes in these directories: ['/Users/mac/Desktop/PodcastPro/webapp']
+INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+INFO:     Started reloader process [87340] using StatReload
+INFO:     Started server process [87347]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
